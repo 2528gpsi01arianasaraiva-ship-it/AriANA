@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Referência em Fotos</title>
+
+    <link rel="stylesheet" href="css/style.css">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</head>
+
+<body>
+
+    <h2>REFERÊNCIA EM FOTOS</h2>
+
+    <input type="file" id="f" multiple accept="image/*">
+
+    <br><br>
+
+    <section id="nav">
+
+        <p>REFERÊNCIA:
+            <input id="a" type="text" placeholder="Foto">
+        </p>
+
+        <p>NÚMERO INICIAL:
+            <input id="s" type="number" value="1">
+        </p>
+
+        <p>QUANT. DÍGITOS:
+            <input id="d" type="number" value="3">
+        </p>
+
+        <p>TAMANHO:
+            <input id="z" type="number" value="48">
+        </p>
+
+        <p>COR:
+            <input id="c" type="color" value="#ffffff">
+        </p>
+
+        <p>POSIÇÃO:
+            <select id="p">
+                <option>Cima</option>
+                <option>Abaixo</option>
+            </select>
+        </p>
+
+        <button onclick="go()">Processar ZIP</button>
+
+    </section>
+
+    <canvas id="cv" style="display:none;"></canvas>
+
+    <footer>
+        © 2026 Ariana Saraiva
+        <br>
+        Feito exclusivamente para a minha mamã ❤️
+    </footer>
+
+    <script>
+        async function go() {
+
+            const files = [...f.files];
+
+            if (files.length === 0) {
+                alert("Escolha pelo menos uma fotografia.");
+                return;
+            }
+
+            const referencia = a.value.trim();
+
+            if (referencia === "") {
+                alert("Introduza uma referência.");
+                a.focus();
+                return;
+            }
+
+            const zip = new JSZip();
+
+            const cv = document.getElementById("cv");
+            const ctx = cv.getContext("2d");
+
+            let numero = parseInt(s.value);
+            const digitos = parseInt(d.value);
+            const tamanho = parseInt(z.value);
+            const cor = c.value;
+            const posicao = p.value;
+
+            for (const file of files) {
+
+                const img = new Image();
+
+                const url = URL.createObjectURL(file);
+
+                await new Promise(resolve => {
+                    img.onload = resolve;
+                    img.src = url;
+                });
+
+                cv.width = img.width;
+                cv.height = img.height;
+
+                ctx.clearRect(0, 0, cv.width, cv.height);
+
+                ctx.drawImage(img, 0, 0);
+
+                ctx.font = `bold ${tamanho}px Arial`;
+                ctx.fillStyle = cor;
+                ctx.strokeStyle = "black";
+                ctx.lineWidth = 4;
+
+                const texto = referencia + String(numero).padStart(digitos, "0");
+
+                const largura = ctx.measureText(texto).width;
+
+                let x;
+                let y;
+
+                if (posicao === "Cima") {
+
+                    x = cv.width - largura - 20;
+                    y = tamanho + 20;
+
+                } else {
+                    x = cv.width - largura - 20;
+                    y = cv.height - 20;
+                }
+                ctx.strokeText(texto, x, y);
+                ctx.fillText(texto, x, y);
+                const blob = await new Promise(resolve =>
+                    cv.toBlob(resolve, "image/jpeg", 0.95)
+                );
+                zip.file(file.name, blob);
+                URL.revokeObjectURL(url);
+                numero++;
+            }
+            const ficheiroZip = await zip.generateAsync({
+                type: "blob"
+            });
+
+            const link = document.createElement("a");
+
+            link.href = URL.createObjectURL(ficheiroZip);
+            link.download = "Fotos_Numeradas.zip";
+            link.click();
+
+            URL.revokeObjectURL(link.href);
+        }
+    </script>
+
+</body>
+
+</html>
